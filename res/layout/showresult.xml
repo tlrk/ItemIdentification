@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    tools:context=".ShowResultActivity"
+    android:orientation="vertical" 
+    android:background="@drawable/background" >
+
+    <com.opencv.itemIdentification.SlidingSwitcherView
+        android:id="@+id/slidingLayout"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:orientation="vertical" >
+
+        <LinearLayout
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal" >
+
+            <Button
+                android:id="@+id/resShowBtn1"
+                android:layout_width="fill_parent"
+                android:layout_height="500dip"/>
+            <Button
+                android:id="@+id/resShowBtn2"
+                android:layout_width="fill_parent"
+                android:layout_height="500dip" />
+            <Button
+                android:id="@+id/resShowBtn3"
+                android:layout_width="fill_parent"
+                android:layout_height="500dip" />
+            <Button
+                android:id="@+id/resShowBtn4"
+                android:layout_width="fill_parent"
+                android:layout_height="500dip"/>
+            <Button
+                android:id="@+id/resShowBtn5"
+                android:layout_width="fill_parent"
+                android:layout_height="500dip"/>
+            <Button
+                android:id="@+id/resShowBtn6"
+                android:layout_width="fill_parent"
+                android:layout_height="500dip"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="60dip"
+            android:layout_height="20dip"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentTop="true"
+            android:layout_margin="15dip"
+            android:orientation="horizontal" >
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent" >
+
+            <TextView
+                android:id="@+id/resShowView"
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:background="@drawable/textbackground"
+                android:layout_marginTop = "505dip"
+                android:layout_marginBottom = "5dip"
+                android:layout_marginLeft = "5dip"
+                android:layout_marginRight = "5dip"
+                android:paddingLeft="5dip"
+                android:paddingTop="5dip"
+                android:textSize="50px"
+                android:text="test"
+                android:textColor="@color/red"/>
+            <TextView
+                android:id="@+id/deliverDataView"
+                android:layout_width="0dip"
+                android:layout_height="0dip"/>
+        </LinearLayout>
+    </com.opencv.itemIdentification.SlidingSwitcherView>
+
+</LinearLayout>

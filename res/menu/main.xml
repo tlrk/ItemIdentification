@@ -1,0 +1,10 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<item android:id="@+id/SVM" 
+	android:title="快速识别" 
+	android:icon="@drawable/androidmarker">
+	</item>
+<item android:id="@+id/SIFT" 
+	android:title="精确识别" 
+	android:icon="@drawable/camera_icon_32x32">
+	</item>
+</menu>

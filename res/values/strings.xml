@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<resources>
+    <string name="str_desc">image description</string>
+    <string name="hello">Hello World, Item Identification!</string>
+    <string name="app_name">物品识别</string>
+    <color name="green">#00FF00</color>
+    <color name="blue">#0000FF</color>
+    <color name="red">#FF0000</color>
+    <color name="BntTextColor">#000099</color>
+    <string name="str_dialog_title">请稍等片刻</string>
+    <string name="str_dialog_body">正在识别图片...</string>
+</resources>
