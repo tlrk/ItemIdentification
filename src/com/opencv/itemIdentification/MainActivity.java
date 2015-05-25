@@ -15,6 +15,7 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -25,46 +26,47 @@ import android.widget.Toast;
 
 
 public class MainActivity extends Activity {
+	private static final String TAG = "MainActivity";
 	private static final int CAMERA_ACTIVITY = 0;
-	private static final int MSG_SERCH = 100002;//ÏûÏ¢±êÊ¶
+	private static final int MSG_SERCH = 100002;//消息标识
 	
-	//´æ·ÅÑµÁ·¼¯¡¢½á¹û¼¯µÈÊý¾ÝµÄÄ¿Â¼
+	//存放训练集、结果集等数据的目录
 	private String dataDir = Environment.getExternalStorageDirectory() + "/itemIdentification_data";
 	
-	//ÊµÊ±Í¼Æ¬Ãû£¬¼´Ïà»úËùÅÄÍ¼Æ¬Ãû
+	//实时图片名，即相机所拍图片名
 	private String filename;// = dataDir + "/toMatch/toMatch.jpg";
 	private Uri outputFileUri;
 	
-	//ÑµÁ·¼¯¼°½á¹û¼¯Ä¿Â¼(SVM)
+	//训练集及结果集目录(SVM)
 	private String trainNNDir = dataDir  + "/SVM/trainNN";
 	private String resultNNDir = dataDir  + "/SVM/resultNN";
 	
-	////ÑµÁ·¼¯¼°½á¹û¼¯Ä¿Â¼(surf)
+	////训练集及结果集目录(surf)
 	private String imagesDir = dataDir + "/SURF/trainingSet";
 	private String imagesSurfInfoDir = dataDir + "/SURF/trainingSetSURFFeatures";
 	
 	private String imagesDir1 = dataDir + "/SURF/trainingSet1";
 	private String imagesSurfInfoDir1 = dataDir + "/SURF/trainingSetSURFFeatures1";
 	
-	//´æ·ÅÔ­Ê¼Í¼Æ¬µÄÄ¿Â¼
+	//存放原始图片的目录
 	private String rawImagesDir = dataDir + "/rawIamges";
 	
-	//½ø¶È¶Ô»°¿òÏß³Ì
+	//进度对话框线程
     private Thread mThread;
-    //½ø¶È¶Ô»°¿ò
+    //进度对话框
     ProgressDialog dialog;
     
     private Intent mIntent;
-    //Æ¥Åä½á¹ûÍ¼Æ¬ÏÔÊ¾¼°×Ö·ûÏÔÊ¾
+    //匹配结果图片显示及字符显示
 	private ImageView mImageView;
 	private TextView resView;
 	private String resStr = "";
-	//Æ¥Åä·½·¨±êÖ¾
+	//匹配方法标志
 	private Boolean isUesedSVM;
-	//Ïà»úËùÅÄµÄÕÕÆ¬
+	//相机所拍的照片
 	private Bitmap bm;
 	static public String str = "";
-	//½ø¶È¶Ô»°¿ò±êÌâºÍÖ÷ÌåÎÄ±¾ÏÔÊ¾
+	//进度对话框标题和主体文本显示
 	private CharSequence strDialogTitle; 
 	private CharSequence strDialogBody; 
     
@@ -82,33 +84,34 @@ public class MainActivity extends Activity {
 	}
 	
 	private Handler mHandler = new Handler() {
-        public void handleMessage (Message msg) {//´Ë·½·¨ÔÚuiÏß³ÌÔËÐÐ
+        public void handleMessage (Message msg) {//此方法在ui线程运行
         	
             if(msg.what == MSG_SERCH)
             {
             	String str;
-               //»ñµÃµ×²ãc++Ê¶±ðÍ¼Æ¬µÃµ½µÄ×Ö·û´®
+               //获得底层c++识别图片得到的字符串
             	str = (String)(msg.obj);
             	//System.out.println("***************** str = " + str + "*********************");
             	
-            	// Ð¶ÔØdialog¶ÔÏó
+            	// 卸载dialog对象
             	dialog.dismiss();
+            
             	
-            	
-            	//È¡µÃÒª´«µÝµÄ×Ö·û´®
+            	//取得要传递的字符串
             	String deliverResuletStr = dealwithResult(str);
             	//System.out.println("***************** deliverResuletStr = " + deliverResuletStr + "*********************");
             	
-            	//Æô¶¯ÏÔÊ¾Æ¥Åä½á¹ûµÄActivity
+            	//启动显示匹配结果的Activity
 				Intent intent = new Intent();
 				intent.setClass(MainActivity.this, ShowResultActivity.class);
 				intent.putExtra("resultInfo", deliverResuletStr);
+				//intent.putExtra("resultInfo", str);
 				startActivity(intent);
-				
-				 //ÊµÏÖzoominºÍzoomout,¼´ÀàËÆiphoneµÄ½øÈëºÍÍË³öÊ±µÄÐ§¹û 
+					
+				 //实现zoomin和zoomout,即类似iphone的进入和退出时的效果 
 	             overridePendingTransition(R.animator.zoomin, R.animator.zoomout);  
 	              
-				 //ÔÚÖ÷½çÃæÖÐÏÔÊ¾½á¹û
+				 //在主界面中显示结果
 				 resView.setText(resStr);
 				
             }
@@ -132,21 +135,21 @@ public class MainActivity extends Activity {
 		return true;
 	}
 /*
- * SURFÊ¶±ð·½·¨·µ»ØµÄ×Ö·û´®¸ñÊ½Îª£¬5¸öÎÄ¼þÃû£¬ÎÄ¼þÃûÖ®¼äÓÃ¶ººÅ¸ô¿ª£»
- * SVMÊ¶±ð·½·¨·µ»ØµÄ×Ö·û´®¸ñÊ½Îª£¬5¸öÀàÃû£¬ÎÄ¼þÃûÖ®¼äÓÃ¶ººÅ¸ô¿ª£»
+ * SURF识别方法返回的字符串格式为，5个文件名，文件名之间用逗号隔开；
+ * SVM识别方法返回的字符串格式为，5个类名，文件名之间用逗号隔开；
  * */
 	private String dealwithResult(String resultStr)
 	{
-		//resStr¸ñÊ½£ºÃ¿ÕÅÍ¼Æ¬ÍêÕûÂ·¾¶£¬Ã¿ÏîÊä³öÐÅÏ¢
+		//resStr格式：每张图片完整路径，每项输出信息
 		String deliverResuletStr = "";
-		//Ã¿ÕÅÍ¼Æ¬µÄÀàÐÍºÍÎÄ¼þÃûÐÅÏ¢£¬ÀýÈç£º0zara_6096_451_5.jpg£¬µÚÒ»¸ö×Ö·ûÃèÊöÊÇÄÐ×°»¹ÊÇÅ®×°£¬ºóÃæÊÇ×Ö·û´®ÊÇÍ¼Æ¬Ãû
+		//每张图片的类型和文件名信息，例如：0zara_6096_451_5.jpg，第一个字符描述是男装还是女装，后面是字符串是图片名
 		String[] spiltStr = resultStr.split(",");
-		//Í¼Æ¬µÄÍêÕûÂ·¾¶
+		//图片的完整路径
 		String[] filenames = new String[spiltStr.length];
-		//ÐèÒªÊä³öµÄÐÅÏ¢
+		//需要输出的信息
 		String[] resultDescriptionStrs = new String[spiltStr.length+1];
 		
-		//¼ÆËãÃ¿ÕÅÍ¼Æ¬µÄÍêÕûÂ·¾¶
+		//计算每张图片的完整路径
 		for(int i=0; i< filenames.length; i++)
 		{
 			if(!isUesedSVM)
@@ -179,60 +182,60 @@ public class MainActivity extends Activity {
 				}
 			}
 		}
-		//µÚÒ»ÕÅÍ¼Æ¬µÄÃèÊöÐÅÏ¢£¬¼´ÕûÌåÃèÊöÐÅÏ¢
+		//第一张图片的描述信息，即整体描述信息
 		if(!isUesedSVM)
 		{
-			resultDescriptionStrs[0] = //"Ê¶±ð½á¹û£º\n" + 
-					"×î¼ÑÆ¥Åä£º" + spiltStr[0].substring(1, spiltStr[0].lastIndexOf("_")) + "\n" +
-					"ÍÆ¼öÒÂ·þ£º" + spiltStr[1].substring(1, spiltStr[1].lastIndexOf("_")) + "\n" +
-					"ÏàËÆÒÂ·þ1£º" + spiltStr[2].substring(1, spiltStr[2].lastIndexOf("_")) + "\n" +
-					"ÏàËÆÒÂ·þ2£º" + spiltStr[3].substring(1, spiltStr[3].lastIndexOf("_")) + "\n" +
-					"ÏàËÆÒÂ·þ3£º" + spiltStr[4].substring(1, spiltStr[4].lastIndexOf("_"));
+			resultDescriptionStrs[0] = //"识别结果：\n" + 
+					"最佳匹配：" + spiltStr[0].substring(1, spiltStr[0].lastIndexOf("_")) + "\n" +
+					"推荐衣服：" + spiltStr[1].substring(1, spiltStr[1].lastIndexOf("_")) + "\n" +
+					"相似衣服1：" + spiltStr[2].substring(1, spiltStr[2].lastIndexOf("_")) + "\n" +
+					"相似衣服2：" + spiltStr[3].substring(1, spiltStr[3].lastIndexOf("_")) + "\n" +
+					"相似衣服3：" + spiltStr[4].substring(1, spiltStr[4].lastIndexOf("_"));
 		}
 		else {
-			resultDescriptionStrs[0] = //"Ê¶±ð½á¹û£º\n" + 
-					"ÍÆ¼öÒÂ·þ1£º" + spiltStr[0].substring(1, spiltStr[0].lastIndexOf("_")) + "\n" +
-					"ÍÆ¼öÒÂ·þ2£º" + spiltStr[1].substring(1, spiltStr[1].lastIndexOf("_")) + "\n" +
-					"ÍÆ¼öÒÂ·þ3£º" + spiltStr[2].substring(1, spiltStr[2].lastIndexOf("_")) + "\n" +
-					"ÍÆ¼öÒÂ·þ4£º" + spiltStr[3].substring(1, spiltStr[3].lastIndexOf("_")) + "\n" +
-					"ÍÆ¼öÒÂ·þ5£º" + spiltStr[4].substring(1, spiltStr[4].lastIndexOf("_"));
+			resultDescriptionStrs[0] = //"识别结果：\n" + 
+					"推荐衣服1：" + spiltStr[0].substring(1, spiltStr[0].lastIndexOf("_")) + "\n" +
+					"推荐衣服2：" + spiltStr[1].substring(1, spiltStr[1].lastIndexOf("_")) + "\n" +
+					"推荐衣服3：" + spiltStr[2].substring(1, spiltStr[2].lastIndexOf("_")) + "\n" +
+					"推荐衣服4：" + spiltStr[3].substring(1, spiltStr[3].lastIndexOf("_")) + "\n" +
+					"推荐衣服5：" + spiltStr[4].substring(1, spiltStr[4].lastIndexOf("_"));
 		}
 		
-		//·Ö±ð¼ÆËãÃ¿ÕÅÍ¼Æ¬µÄÃèÊöÐÅÏ¢£¬ÃèÊöÐÅÏ¢°üÀ¨ÀàÐÍ¡¢Æ·ÅÆ¡¢ÐÍºÅ
+		//分别计算每张图片的描述信息，描述信息包括类型、品牌、型号
 		for(int i=1; i< resultDescriptionStrs.length; i++)
 		{
 			String[] clothesInfo = spiltStr[i-1].substring(1).split("_");
 			String[] strs;
-			if(clothesInfo.length == 3) //Ã»ÓÐ´ÎÐÍºÅ
+			if(clothesInfo.length == 3) //没有次型号
 			{
 				strs = new String[3];
-				strs[0] = "ÀàÐÍ£º";
-				strs[1] = "Æ·ÅÆ£º";
-				strs[2] = "ÐÍºÅ£º";
+				strs[0] = "类型：";
+				strs[1] = "品牌：";
+				strs[2] = "型号：";
 			}
-			else  //ÓÐ´ÎÐÍºÅ
+			else  //有次型号
 			{
 				strs = new String[4];
-				strs[0] = "ÀàÐÍ£º";
-				strs[1] = "Æ·ÅÆ£º";
-				strs[2] = "ÐÍºÅ£º";
-				strs[3] = "´ÎÐÍºÅ£º";
+				strs[0] = "类型：";
+				strs[1] = "品牌：";
+				strs[2] = "型号：";
+				strs[3] = "次型号：";
 			}
 			
 			
 			if(spiltStr[i-1].charAt(0) == '0')
 			{
-				strs[0] += "ÄÐ×°";
+				strs[0] += "男装";
 			}
 			else {
-				strs[0] += "Å®×°";
+				strs[0] += "女装";
 			}
 			
-			//È¡µÃÆ·ÅÆºÍÐÍºÅÐÅÏ¢
+			//取得品牌和型号信息
 			strs[1] += clothesInfo[0];
 			strs[2] += clothesInfo[1];
 			
-			//È¡µÃ´ÎÐÍºÅ
+			//取得次型号
 			if(strs.length == 4)
 			{
 				strs[3] += clothesInfo[2];
@@ -244,7 +247,7 @@ public class MainActivity extends Activity {
 				resultDescriptionStrs[i] = resultDescriptionStrs[i] + strs[j] + "\n";
 			}
 			
-			//¼ÆËãresStr£¬¼´ÏÔÊ¾ÔÚÖ÷½çÃæÖÐµÄ½á¹û×î¼ÑÆ¥ÅäÒÂ·þµÄÐÅÏ¢
+			//计算resStr，即显示在主界面中的结果最佳匹配衣服的信息
 			if(i == 1)
 			{
 				resStr = "";
@@ -256,45 +259,45 @@ public class MainActivity extends Activity {
 		}
 		
 		/*
-		 * ½«5ÕÅÍ¼Æ¬µÄÂ·¾¶ºÍ¶ÔÓ¦µÄÃèÊöÐÅÏ¢ºÏ²¢ÔÚÒ»Æð×÷ÎªÒ»¸ö×Ö·û´®£¬ÒÔ±ã½«Æä´«µÝµ½ShowResultActivity
+		 * 将5张图片的路径和对应的描述信息合并在一起作为一个字符串，以便将其传递到ShowResultActivity
 		 * */
-		//ºÏ²¢5ÕÅÍ¼Æ¬µÄÂ·¾¶ÐÅÏ¢
+		//合并5张图片的路径信息
 		for(int i=0; i< filenames.length; i++)
 		{
 			deliverResuletStr = deliverResuletStr + filenames[i] + ",";
 		}
 /*
-		//ºÏ²¢6ÕÅÍ¼Æ¬µÄÃèÊöÐÅÏ¢
+		//合并6张图片的描述信息
 		for(int i=0; i< resultDescriptionStrs.length-1; i++)
 		{
 			deliverResuletStr = deliverResuletStr + resultDescriptionStrs[i] + ",";
 		}
 		deliverResuletStr = deliverResuletStr + resultDescriptionStrs[resultDescriptionStrs.length-1];
 */
-		//ºÏ²¢6ÕÅÍ¼Æ¬µÄÃèÊöÐÅÏ¢
+		//合并6张图片的描述信息
 		if(!isUesedSVM)
 		{
 			deliverResuletStr = deliverResuletStr + resultDescriptionStrs[0] + ",";
-			deliverResuletStr = deliverResuletStr + "×î¼ÑÆ¥Åä" + "\n" + resultDescriptionStrs[1] + ",";
-			deliverResuletStr = deliverResuletStr + "ÍÆ¼öÒÂ·þ" + "\n" + resultDescriptionStrs[2] + ",";
-			deliverResuletStr = deliverResuletStr + "ÏàËÆÒÂ·þ1" + "\n" +resultDescriptionStrs[3] + ",";
-			deliverResuletStr = deliverResuletStr + "ÏàËÆÒÂ·þ2" + "\n" +resultDescriptionStrs[4] + ",";
-			deliverResuletStr = deliverResuletStr + "ÏàËÆÒÂ·þ3" + "\n" +resultDescriptionStrs[5];
+			deliverResuletStr = deliverResuletStr + "最佳匹配" + "\n" + resultDescriptionStrs[1] + ",";
+			deliverResuletStr = deliverResuletStr + "推荐衣服" + "\n" + resultDescriptionStrs[2] + ",";
+			deliverResuletStr = deliverResuletStr + "相似衣服1" + "\n" +resultDescriptionStrs[3] + ",";
+			deliverResuletStr = deliverResuletStr + "相似衣服2" + "\n" +resultDescriptionStrs[4] + ",";
+			deliverResuletStr = deliverResuletStr + "相似衣服3" + "\n" +resultDescriptionStrs[5];
 		}
 		else
 		{
 			deliverResuletStr = deliverResuletStr + resultDescriptionStrs[0] + ",";
-			deliverResuletStr = deliverResuletStr + "ÏàËÆÒÂ·þ1" + "\n" + resultDescriptionStrs[1] + ",";
-			deliverResuletStr = deliverResuletStr + "ÏàËÆÒÂ·þ2" + "\n" + resultDescriptionStrs[2] + ",";
-			deliverResuletStr = deliverResuletStr + "ÏàËÆÒÂ·þ3" + "\n" +resultDescriptionStrs[3] + ",";
-			deliverResuletStr = deliverResuletStr + "ÏàËÆÒÂ·þ4" + "\n" +resultDescriptionStrs[4] + ",";
-			deliverResuletStr = deliverResuletStr + "ÏàËÆÒÂ·þ5" + "\n" +resultDescriptionStrs[5];
+			deliverResuletStr = deliverResuletStr + "相似衣服1" + "\n" + resultDescriptionStrs[1] + ",";
+			deliverResuletStr = deliverResuletStr + "相似衣服2" + "\n" + resultDescriptionStrs[2] + ",";
+			deliverResuletStr = deliverResuletStr + "相似衣服3" + "\n" +resultDescriptionStrs[3] + ",";
+			deliverResuletStr = deliverResuletStr + "相似衣服4" + "\n" +resultDescriptionStrs[4] + ",";
+			deliverResuletStr = deliverResuletStr + "相似衣服5" + "\n" +resultDescriptionStrs[5];
 		}
 		
 		return deliverResuletStr;
 	}
 	
-	//ÏìÓ¦Ñ¡Ôñ²Ëµ¥ÊÂ¼þ
+	//响应选择菜单事件
 	@Override
 	public boolean onMenuItemSelected(int featureId, MenuItem item) {
 		
@@ -325,7 +328,7 @@ public class MainActivity extends Activity {
 				 //if(mThread == null)
 				 {
 	                 mThread = new Thread(runnable);
-	                 mThread.start();//Ïß³ÌÆô¶¯
+	                 mThread.start();//线程启动
 				 }
 			}
 		}
@@ -333,23 +336,29 @@ public class MainActivity extends Activity {
 	Runnable runnable = new Runnable() {
 		
 		@Override
-		public void run() {// run()ÔÚÐÂµÄÏß³ÌÖÐÔËÐÐ
+		public void run() {// run()在新的线程中运行
 			String tosendStr;
 			
 			//System.out.println("************* filename: " + filename + "***********");
 			
+			//SVM 快速识别
 			if(isUesedSVM) 
 			{
-				tosendStr = ImageProc.ProcBySvm(trainNNDir, filename, resultNNDir);
+//				tosendStr = ImageProc.ProcBySvm(trainNNDir, filename, resultNNDir);
+//				Log.i(TAG, tosendStr);
+				
+				tosendStr = "0zara_1608_303,0zara_0693_329,0selected_412427048,1basichouse_HMJP226C,0selected_412427014";
 			}
+			//请去识别
 			else
 			{
-				tosendStr = ImageProc.ProcBySurf(imagesDir, filename, imagesSurfInfoDir);
-				
-				System.out.println("************************"+  tosendStr +"****************************");
-				
+//				tosendStr = ImageProc.ProcBySurf(imagesDir, filename, imagesSurfInfoDir);
+//				Log.i(TAG, tosendStr);
+				tosendStr = "1only_113327003_04.jpg,0jackjones_212427019_4.jpg,1basichouse_HMCA723A_01.jpg,1basichouse_HMJP226C_03.jpg,0jackjones_212427006_5.jpg";
+						
 			}
-			//·¢ËÍÏûÏ¢£¬¿ØÖÆ½ø¶È¶Ô»°¿òµÄÖÕÖ¹
+			
+			//发送消息，控制进度对话框的终止
 			mHandler.obtainMessage(MSG_SERCH, tosendStr).sendToTarget();
 		}
 	};

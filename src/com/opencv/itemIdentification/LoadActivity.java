@@ -31,7 +31,7 @@ public class LoadActivity extends Activity {
               LoadActivity.this.startActivity(mainIntent);
               LoadActivity.this.finish();
               
-              //ÊµÏÖzoominºÍzoomout,¼´ÀàËÆiphoneµÄ½øÈëºÍÍË³öÊ±µÄĞ§¹û 
+              //å®ç°zoominå’Œzoomout,å³ç±»ä¼¼iphoneçš„è¿›å…¥å’Œé€€å‡ºæ—¶çš„æ•ˆæœ 
               overridePendingTransition(R.animator.zoomin, R.animator.zoomout);  
              }
         }, LOAD_DISPLAY_TIME); 

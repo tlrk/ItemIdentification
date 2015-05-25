@@ -18,7 +18,7 @@ public class ShowResultActivity extends Activity {
 		resultStr = this.getIntent().getStringExtra("resultInfo");
 		deliverDataView = (TextView)findViewById(R.id.deliverDataView); 
 		
-		//´«µİÊı¾İ£¬ÒÔ±ãÔÚÒ³ÃæÏÔÊ¾
+		//ä¼ é€’æ•°æ®ï¼Œä»¥ä¾¿åœ¨é¡µé¢æ˜¾ç¤º
 		deliverDataView.setText(resultStr);
 	}
 	
@@ -27,7 +27,7 @@ public class ShowResultActivity extends Activity {
 		// TODO Auto-generated method stub
 		super.finish();
          
-         //ÊµÏÖzoominºÍzoomout,¼´ÀàËÆiphoneµÄ½øÈëºÍÍË³öÊ±µÄĞ§¹û 
+         //å®ç°zoominå’Œzoomout,å³ç±»ä¼¼iphoneçš„è¿›å…¥å’Œé€€å‡ºæ—¶çš„æ•ˆæœ 
          overridePendingTransition(R.animator.zoomin, R.animator.zoomout); 
 	}
 }
